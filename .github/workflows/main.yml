@@ -21,6 +21,7 @@ jobs:
 
     - name: Copy code to server
       run: |
+        ssh-keyscan -H 87.251.73.21 >> ~/.ssh/known_hosts
         rsync -avz --exclude '.git*' ./ root@87.251.73.21:~/backend/
 
     - name: Deploy with Docker Compose
