@@ -1,0 +1,171 @@
+version: "3.9"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"       # AMQP
+      - "15672:15672"     # Web UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - appnet
+
+  # IdentityService и БД
+  identity_postgres:
+    image: postgres:16-alpine
+    container_name: identity_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: identitydb
+    networks:
+      - appnet
+
+  identity:
+    build:
+      context: ./WebApplication3/IdentityService
+      dockerfile: Dockerfile
+    container_name: identity_service
+    ports:
+      - "5005:80"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=identity_postgres;Database=identitydb;Username=postgres;Password=postgres
+      - RABBITMQ__HOST=rabbitmq
+      - RABBITMQ__PORT=5672
+      - RABBITMQ__USER=guest
+      - RABBITMQ__PASS=guest
+    depends_on:
+      - identity_postgres
+      - rabbitmq
+    networks:
+      - appnet
+
+  # ProfilesService и БД
+  profiles_postgres:
+    image: postgres:16-alpine
+    container_name: profiles_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: profilesdb
+    networks:
+      - appnet
+
+  profiles:
+    build:
+      context: ./WebApplication3/ProfilesService
+      dockerfile: Dockerfile
+    container_name: profiles_service
+    ports:
+      - "5001:80"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=profiles_postgres;Database=profilesdb;Username=postgres;Password=postgres
+      - RABBITMQ__HOST=rabbitmq
+      - RABBITMQ__PORT=5672
+      - RABBITMQ__USER=guest
+      - RABBITMQ__PASS=guest
+    depends_on:
+      - profiles_postgres
+      - rabbitmq
+    networks:
+      - appnet
+
+  # JobsService и БД
+  jobs_postgres:
+    image: postgres:16-alpine
+    container_name: jobs_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jobsdb
+    networks:
+      - appnet
+
+  jobs:
+    build:
+      context: ./WebApplication3/JobsService
+      dockerfile: Dockerfile
+    container_name: jobs_service
+    ports:
+      - "5002:80"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=jobs_postgres;Database=jobsdb;Username=postgres;Password=postgres
+      - RABBITMQ__HOST=rabbitmq
+      - RABBITMQ__PORT=5672
+      - RABBITMQ__USER=guest
+      - RABBITMQ__PASS=guest
+    depends_on:
+      - jobs_postgres
+      - profiles
+      - rabbitmq
+    networks:
+      - appnet
+
+  # ApplicationsService и БД
+  applications_postgres:
+    image: postgres:16-alpine
+    container_name: applications_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: applicationsdb
+    networks:
+      - appnet
+
+  applications:
+    build:
+      context: ./WebApplication3/ApplicationsService
+      dockerfile: Dockerfile
+    container_name: applications_service
+    ports:
+      - "5003:80"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=applications_postgres;Database=applicationsdb;Username=postgres;Password=postgres
+      - RABBITMQ__HOST=rabbitmq
+      - RABBITMQ__PORT=5672
+      - RABBITMQ__USER=guest
+      - RABBITMQ__PASS=guest
+    depends_on:
+      - applications_postgres
+      - jobs
+      - profiles
+      - rabbitmq
+    networks:
+      - appnet
+
+  # SearchService и БД
+  search_postgres:
+    image: postgres:16-alpine
+    container_name: search_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: searchdb
+    networks:
+      - appnet
+
+  search:
+    build:
+      context: ./SearchService
+      dockerfile: Dockerfile
+    container_name: search_service
+    ports:
+      - "4000:4000"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@search_postgres:5432/searchdb
+      - RABBITMQ__HOST=rabbitmq
+      - RABBITMQ__PORT=5672
+      - RABBITMQ__USER=guest
+      - RABBITMQ__PASS=guest
+    depends_on:
+      - search_postgres
+      - rabbitmq
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
