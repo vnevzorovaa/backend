@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - homework6
+      - main
 
 jobs:
   deploy:
