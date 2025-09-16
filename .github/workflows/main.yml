@@ -26,5 +26,5 @@ jobs:
 
     - name: Deploy with Docker Compose
       run: |
-        ssh root@87.251.73.21 "cd ~/backend && docker compose pull && docker compose up -d --build"
+        ssh root@87.251.73.21 "cd ~/backend/backend && docker compose pull && docker compose up -d --build"
 
