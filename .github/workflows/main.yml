@@ -19,9 +19,9 @@ jobs:
 
     - name: Copy code to server
       run: |
+        mkdir -p ~/.ssh
         ssh-keyscan -H 87.251.73.21 >> ~/.ssh/known_hosts
         sshpass -p "${{ secrets.SERVER_PASSWORD }}" rsync -avz --delete --exclude '.git*' ./ root@87.251.73.21:~
-
     - name: Deploy with Docker Compose
       run: |
         sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh root@87.251.73.21 "cd ~/backend && docker compose pull && docker compose up -d --build"
